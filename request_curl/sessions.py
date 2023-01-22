@@ -1,4 +1,4 @@
-from http.cookiejar import CookieJar, Cookie
+from http.cookiejar import CookieJar
 from io import BytesIO
 from typing import Dict, Optional, List, Any, Union
 import json as _json
@@ -9,48 +9,6 @@ from requests.cookies import cookiejar_from_dict, merge_cookies
 
 from request_curl.helper import get_cookie
 from request_curl.models import Response
-
-DEFAULT_UA: str = "".join([
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 13_1)"
-    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36"
-])
-
-DEFAULT_HEADER: Dict[str, str] = {
-    "sec-ch-ua": ' Not A;Brand";v="99", "Chromium";v="98", "Google Chrome";v="98',
-    "sec-ch-ua-mobile": "?0",
-    "sec-ch-ua-platform": '"Windows"',
-    "Upgrade-Insecure-Requests": "1",
-    "User-Agent": DEFAULT_UA,
-    "Accept": "".join([
-        "text/html,application/xhtml+xml,application/xml;q=0.9,",
-        "image/avif,image/webp,image/apng,*/*;q=0.8,"
-        "application/signed-exchange;v=b3;q=0.9"
-    ]),
-    "Sec-Fetch-Site": "none",
-    "Sec-Fetch-Mode": "navigate",
-    "Sec-Fetch-User": "?1",
-    "Sec-Fetch-Dest": "document",
-    "Accept-Encoding": "gzip, deflate, br",
-    "Accept-Language": "en-US,en;q=0.9",
-}
-
-DEFAULT_CIPHER_SUITE: List[str] = [
-    "TLS_AES_128_GCM_SHA256",
-    "TLS_AES_256_GCM_SHA384",
-    "TLS_CHACHA20_POLY1305_SHA256",
-    "ECDHE-ECDSA-AES128-GCM-SHA256",
-    "ECDHE-RSA-AES128-GCM-SHA256",
-    "ECDHE-ECDSA-AES256-GCM-SHA384",
-    "ECDHE-RSA-AES256-GCM-SHA384",
-    "ECDHE-ECDSA-CHACHA20-POLY1305",
-    "ECDHE-RSA-CHACHA20-POLY1305",
-    "ECDHE-RSA-AES128-SHA",
-    "ECDHE-RSA-AES256-SHA",
-    "AES128-GCM-SHA256",
-    "AES256-GCM-SHA384",
-    "AES128-SHA",
-    "AES256-SHA",
-]
 
 
 class Session:
@@ -70,16 +28,20 @@ class Session:
       ...     s.get('https://httpbin.org/get')
       <Response [200]>
     """
+
     def __init__(
         self,
-        headers: Dict[str, str] = DEFAULT_HEADER,
-        cipher_suite: List[str] = DEFAULT_CIPHER_SUITE,
+        headers: Dict[str, str] = None,
+        cipher_suite: List[str] = None,
         proxies: str = "",
         http2: bool = False,
-        accept_encoding: str = "gzip, deflate"
+        accept_encoding: str = "",
     ):
         self._curl = pycurl.Curl()
-        self._curl.setopt(pycurl.ACCEPT_ENCODING, accept_encoding)
+        self.header = headers if headers else []
+
+        if accept_encoding:
+            self._curl.setopt(pycurl.ACCEPT_ENCODING, accept_encoding)
 
         if http2:
             self._curl.setopt(pycurl.HTTP_VERSION, pycurl.CURL_HTTP_VERSION_2_0)
@@ -92,21 +54,8 @@ class Session:
             self._curl.setopt(pycurl.PROXY, "")
             self._curl.setopt(pycurl.PROXYUSERPWD, "")
 
-        self._curl.setopt(pycurl.SSL_CIPHER_LIST, ",".join(cipher_suite))
-
-        if not headers.get("user-agent"):
-            headers['user-agent'] = DEFAULT_UA
-
-        if headers:
-            self._curl.setopt(
-                pycurl.HTTPHEADER,
-                [f"{k}: {v}" for k, v in headers.items()]
-            )
-        else:
-            self._curl.setopt(
-                pycurl.HTTPHEADER,
-                [f"{k}: {v}" for k, v in DEFAULT_HEADER.items()]
-            )
+        if cipher_suite:
+            self._curl.setopt(pycurl.SSL_CIPHER_LIST, ",".join(cipher_suite))
 
         self.cookies: CookieJar = cookiejar_from_dict({})
 
@@ -139,12 +88,11 @@ class Session:
         params: Optional[Dict[str, str]] = None,
         data: Optional[Dict[str, Any]] = None,
         json: Optional[Dict[str, Any]] = None,
-        headers: Optional[Dict[str, str]] = DEFAULT_HEADER,
         proxies: Optional[str] = None,
         timeout: Union[float, int] = 60,
         allow_redirects: bool = True,
         http2: bool = True,
-        verify: bool = True
+        verify: bool = True,
     ):
         """Constructs a :class:`Request <Request>`, prepares it and sends it.
         Returns :class:`Response <Response>` object.
@@ -177,7 +125,7 @@ class Session:
             certificates, which will make your application vulnerable to
             man-in-the-middle (MitM) attacks. Setting verify to ``False``
             may be useful during local development or testing.
-        :rtype: requests.Response
+        :rtype: Response
         """
 
         if method.upper() == "POST":
@@ -212,12 +160,23 @@ class Session:
             self._curl.setopt(pycurl.POSTFIELDS, "&".join(form).encode("utf-8"))
 
         if json:
+            headers = dict()
             headers["Accept"] = "application/json"
             headers["Content-Type"] = "application/json"
             headers["charset"] = "utf-8"
+
+            self._curl.setopt(
+                pycurl.HTTPHEADER, [f"{k}: {v}" for k, v in headers.items()]
+            )
+
             if isinstance(json, dict):
                 json_data = _json.dumps(json)
                 self._curl.setopt(pycurl.POSTFIELDS, json_data)
+
+        elif len(self.header) > 0:
+            self._curl.setopt(
+                pycurl.HTTPHEADER, [f"{k}: {v}" for k, v in self.header.items()]
+            )
 
         if self.cookies:
             chunks = []
@@ -246,24 +205,21 @@ class Session:
             self.debug_entries.append(b.decode("utf-8"))
 
     def get(self, url, **kwargs):
-        r"""Sends a GET request. Returns :class:`Response` object.
-
-        :param url: URL for the new :class:`Request` object.
-        :param \*\*kwargs: Optional arguments that ``request`` takes.
-        :rtype: requests.Response
-        """
-
-        return self.request('GET', url, **kwargs)
+        r"""Sends a GET request. Returns :class:`Response` object."""
+        return self.request("GET", url, **kwargs)
 
     def post(self, url, **kwargs):
-        r"""Sends a POST request. Returns :class:`Response` object.
-
-        :param url: URL for the new :class:`Request` object.
-        :param \*\*kwargs: Optional arguments that ``request`` takes.
-        :rtype: requests.Response
-        """
-
-        return self.request('POST', url, **kwargs)
+        r"""Sends a POST request. Returns :class:`Response` object."""
+        return self.request("POST", url, **kwargs)
 
     def options(self, url, **kwargs):
-        return self.request('OPTIONS', url, **kwargs)
+        r"""Sends a OPTIONS request. Returns :class:`Response` object."""
+        return self.request("OPTIONS", url, **kwargs)
+
+    def delete(self, url, **kwargs):
+        r"""Sends a DELETE request. Returns :class:`Response` object."""
+        return self.request("DELETE", url, **kwargs)
+
+    def put(self, url, **kwargs):
+        r"""Sends a PUT request. Returns :class:`Response` object."""
+        return self.request("PUT", url, **kwargs)

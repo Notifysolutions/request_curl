@@ -11,35 +11,10 @@ to install request_curl.
 pip install request_curl
 ```
 
-## HTTP2
-HTTP2 is disabled by default.
-
-```python
-import request_curl
-s = request_curl.Session(http2=True)
-r = s.get("https://www.example.com")
-```
-
-## Proxy Support
-Proxy has to be formatted as a string.
-
-```python
-import request_curl
-s = request_curl.Session()
-r = s.get("https://www.example.com", proxies="ip:port:user:password")
-```
-
-## Content Decoding
-```python
-import request_curl
-s = request_curl.Session(accept_encoding="br, gzip, deflate")
-r = s.get("https://www.example.com", debug=True)
-```
-
 ## Response Object
 
-The response object behaves 
-similar to the one of the requests library.
+The response object behaves
+similar to the one of the [requests](https://pypi.org/project/requests/)' library.
 
 ```python
 import request_curl
@@ -52,7 +27,32 @@ print(r.content)
 print(r.text)
 print(r.json)
 print(r.url)
-print(r.history)
+```
+
+## Proxy Support
+Proxy has to be formatted as a string.
+
+```python
+import request_curl
+s = request_curl.Session()
+r = s.get("https://www.example.com", proxies="ip:port:user:password")
+# r = s.get("https://www.example.com", proxies="ip:port")
+```
+
+## Content Decoding
+```python
+import request_curl
+s = request_curl.Session(accept_encoding="br, gzip, deflate")
+r = s.get("https://www.example.com", debug=True)
+```
+
+## HTTP2
+HTTP2 is disabled by default.
+
+```python
+import request_curl
+s = request_curl.Session(http2=True)
+r = s.get("https://www.example.com")
 ```
 
 ## Cipher Suites
@@ -81,7 +81,7 @@ s = request_curl.Session()
 r = s.get("https://www.example.com", debug=True)
 ```
 
-## Custom Header
+## Custom Headers
 You can specify custom a customer header 
 as a dictionary.
 
@@ -95,15 +95,31 @@ r = s.get("https://www.example.com", headers=headers)
 ```
 
 ## Install with Curl-Impersonate
-- https://github.com/lwthiker/curl-impersonate/blob/main/INSTALL.md
-- sudo apt install build-essential pkg-config cmake ninja-build curl autoconf automake libtool
-- ``sudo apt install -y libbrotli-dev golang build-essential libnghttp2-dev cmake libunwind-dev libssl-dev git python3-dev``
-- git clone https://github.com/pycurl/pycurl.git
-- sudo python3 setup.py install --curl-config=/usr/local/bin/curl-impersonate-chrome-config
+How to wrap curl-impersonate and request_curl to imitate browser fingerprints
+
+```bash
+# Tested for Ubuntu
+# Follow https://github.com/lwthiker/curl-impersonate/blob/main/INSTALL.md instructions
+sudo apt install -y libbrotli-dev golang build-essential libnghttp2-dev cmake libunwind-dev libssl-dev git python3-dev
+git clone https://github.com/pycurl/pycurl.git
+sudo python3 setup.py install --curl-config=/usr/local/bin/curl-impersonate-chrome-config
+pip install request_curl
+```
 
 ```python
-import pycurl
-pycurl.version_info()
-# (9, '7.84.0', 480256, 'x86_64-pc-linux-gnu', 1370063517, 'BoringSSL', 0, '1.2.11', ('dict', 'file', 'ftp', 'ftps', 'gopher', 'gophers', 'http', 'https', 'imap', 'imaps', 'mqtt', 'pop3', 'pop3s', 'rtsp', 'smb', 'smbs', 'smtp', 'smtps', 'telnet', 'tftp'), None, 0, None)
-quit()
+import request_curl
+from request_curl import CHROME_CIPHER_SUITE, CHROME_HEADER
+
+# match chrome fingerprint
+s = request_curl.Session(
+    http2=True, 
+    accept_encoding="br, gzip, deflate",
+    cipher_suite=CHROME_CIPHER_SUITE,
+    headers=CHROME_HEADER
+)
+r = s.get("https://example.com")
 ```
+
+## License
+Ennis Blank <Ennis.Blank@hotmail.com>, Mauritz Uphoff <Mauritz.Uphoff@me.com> \
+[MIT](LICENSE)

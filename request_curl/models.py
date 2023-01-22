@@ -52,10 +52,7 @@ HTTP_RES_HDR = re.compile(r"(?P<version>HTTP\/.*?)\s+(?P<code>\d{3})\s+(?P<messa
 
 class Response:
     def __init__(
-            self,
-            curl: pycurl.Curl,
-            body_output: BytesIO,
-            headers_output: BytesIO
+        self, curl: pycurl.Curl, body_output: BytesIO, headers_output: BytesIO
     ):
         self._curl: pycurl.Curl = curl
 
@@ -110,13 +107,17 @@ class Response:
     def __set_text(self):
         try:
             if not self._text:
-                self._text = self._body_output.getvalue().decode('UTF-8')
+                self._text = self._body_output.getvalue().decode("UTF-8")
                 if "gzip" in self.__get_header_value("Content-Encoding"):
                     try:
                         if "ISO-8859-1" in self.__get_header_value("Content-Type"):
-                            self._text = str(self.__decode_gzip(self._body_output), "ISO-8859-1")
+                            self._text = str(
+                                self.__decode_gzip(self._body_output), "ISO-8859-1"
+                            )
                         else:
-                            self._text = str(self.__decode_gzip(self._body_output), "utf-8")
+                            self._text = str(
+                                self.__decode_gzip(self._body_output), "utf-8"
+                            )
                     except zlib.error:
                         pass
                 elif "br" in self.__get_header_value("Content-Encoding"):
@@ -126,7 +127,7 @@ class Response:
                         pass
 
         except Exception as e:
-            self._text = ''
+            self._text = ""
 
     @property
     def cookies(self) -> CookieJar:
@@ -144,7 +145,7 @@ class Response:
 
             return block_headers
 
-        raw_headers = self._headers_output.getvalue().decode('UTF-8')
+        raw_headers = self._headers_output.getvalue().decode("UTF-8")
 
         for raw_block in self.__split_headers_blocks(raw_headers):
             self._headers = parse_header_block(raw_block)
@@ -212,11 +213,7 @@ class CaseInsensitiveDict(MutableMapping):
         return len(self._store)
 
     def lower_items(self):
-        return (
-            (lowerkey, keyval[1])
-            for (lowerkey, keyval)
-            in self._store.items()
-        )
+        return ((lowerkey, keyval[1]) for (lowerkey, keyval) in self._store.items())
 
     def __eq__(self, other):
         if isinstance(other, Mapping):

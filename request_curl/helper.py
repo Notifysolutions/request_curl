@@ -4,15 +4,13 @@ from http.cookies import SimpleCookie
 
 
 def to_cookiejar(
-        cookies: Union[str, CookieJar],
-        headers: List[Dict[str, str]]
+    cookies: Union[str, CookieJar], headers: List[Dict[str, str]]
 ) -> CookieJar:
     if isinstance(cookies, CookieJar):
         return cookies
 
     _cookies: List[Tuple[str, str, str]] = [
-        (get_cookie_name(cookie), get_cookie_value(cookie), "")
-        for cookie in cookies
+        (get_cookie_name(cookie), get_cookie_value(cookie), "") for cookie in cookies
     ]
 
     cookie_jar: CookieJar = CookieJar()
@@ -44,15 +42,15 @@ def get_cookie(name: str, value: str, domain: str):
         domain=domain,
         domain_specified=False,
         domain_initial_dot=False,
-        path='/',
+        path="/",
         path_specified=True,
         secure=False,
         expires=None,
         discard=True,
         comment=None,
         comment_url=None,
-        rest={'HttpOnly': ""},
-        rfc2109=False
+        rest={"HttpOnly": ""},
+        rfc2109=False,
     )
 
 
