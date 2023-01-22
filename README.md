@@ -1,6 +1,6 @@
 # Request Curl
 
-User-friendly wrapper for pycurl
+A user-friendly wrapper for pycurl that simplifies HTTP requests.
 
 ## Installation
 Use the package manager 
@@ -11,48 +11,61 @@ to install request_curl.
 pip install request_curl
 ```
 
+# Quickstart
+A request_curl session manages cookies, connection pooling, and configurations.
+
+Basic Usage:
+```python
+import request_curl
+s = request_curl.Session()
+s.get('https://httpbin.org/get') # returns <Response [200]>
+s.request('GET', 'https://httpbin.org/get') # returns <Response [200]>
+```
+
+Using a Context Manager
+```python
+import request_curl
+with request_curl.Session() as session:
+    session.get('https://httpbin.org/get') # returns <Response [200]>
+```
+
+# Features
+
+## Response Object
+
+The response object is similar to that of the [requests](https://pypi.org/project/requests/) library.
+
+```python
+import request_curl
+s = request_curl.Session()
+r = s.get("https://httpbin.org/get")
+
+print(r) # prints response object
+print(r.status_code) # prints status code
+print(r.content) # prints response content in bytes
+print(r.text) # prints response content as text
+print(r.json) # prints response content as JSON
+print(r.url) # prints response URL
+print(r.headers) # prints response URL
+```
+
+## Proxy Support
+Format the proxy as a string.
+
+```python
+import request_curl
+s = request_curl.Session()
+# supports authentication: r = s.get("https://httpbin.org/get", proxies="ip:port:user:password")
+r = s.get("https://httpbin.org/get", proxies="ip:port")
+```
+
 ## HTTP2
 HTTP2 is disabled by default.
 
 ```python
 import request_curl
 s = request_curl.Session(http2=True)
-r = s.get("https://www.example.com")
-```
-
-## Proxy Support
-Proxy has to be formatted as a string.
-
-```python
-import request_curl
-s = request_curl.Session()
-r = s.get("https://www.example.com", proxies="ip:port:user:password")
-```
-
-## Content Decoding
-```python
-import request_curl
-s = request_curl.Session(accept_encoding="br, gzip, deflate")
-r = s.get("https://www.example.com", debug=True)
-```
-
-## Response Object
-
-The response object behaves 
-similar to the one of the requests library.
-
-```python
-import request_curl
-s = request_curl.Session()
-r = s.get("https://www.example.com")
-
-print(r)
-print(r.status_code)
-print(r.content)
-print(r.text)
-print(r.json)
-print(r.url)
-print(r.history)
+r = s.get("https://httpbin.org/get")
 ```
 
 ## Cipher Suites
@@ -68,22 +81,20 @@ cipher_suite = [
     "AES256-GCM-SHA384"
 ]
 s = request_curl.Session(cipher_suite=cipher_suite)
-r = s.get("https://www.example.com")
+r = s.get("https://httpbin.org/get")
 ```
 
 ## Debug Request
-If debug is set to True the raw input 
-and output headers will bre printed out.
+Set debug to True to print raw input and output headers.
 
 ```python
 import request_curl
 s = request_curl.Session()
-r = s.get("https://www.example.com", debug=True)
+r = s.get("https://httpbin.org/get", debug=True)
 ```
 
-## Custom Header
-You can specify custom a customer header 
-as a dictionary.
+## Custom Headers
+Specify custom headers as a dictionary.
 
 ```python
 import request_curl
@@ -91,19 +102,31 @@ s = request_curl.Session()
 headers = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.163 Safari/537.36"
 }
-r = s.get("https://www.example.com", headers=headers)
+r = s.get("https://httpbin.org/get", headers=headers)
 ```
 
-## Install with Curl-Impersonate
-- https://github.com/lwthiker/curl-impersonate/blob/main/INSTALL.md
-- sudo apt install build-essential pkg-config cmake ninja-build curl autoconf automake libtool
-- ``sudo apt install -y libbrotli-dev golang build-essential libnghttp2-dev cmake libunwind-dev libssl-dev git python3-dev``
-- git clone https://github.com/pycurl/pycurl.git
-- sudo python3 setup.py install --curl-config=/usr/local/bin/curl-impersonate-chrome-config
+## Data
 
 ```python
-import pycurl
-pycurl.version_info()
-# (9, '7.84.0', 480256, 'x86_64-pc-linux-gnu', 1370063517, 'BoringSSL', 0, '1.2.11', ('dict', 'file', 'ftp', 'ftps', 'gopher', 'gophers', 'http', 'https', 'imap', 'imaps', 'mqtt', 'pop3', 'pop3s', 'rtsp', 'smb', 'smbs', 'smtp', 'smtps', 'telnet', 'tftp'), None, 0, None)
-quit()
+import request_curl
+s = request_curl.Session()
+
+# sending form data
+form_data = {"key": "value"}
+response = s.post("https://httpbin.org/post", data=form_data)
+
+# sending json data
+json_data = {"key": "value"}
+response = s.post("https://httpbin.org/post", json=json_data)
 ```
+
+# Contributing
+
+We welcome contributions through pull requests. 
+Before making major changes, please open an issue to discuss your intended changes.
+Also, ensure to update relevant tests.
+
+# License
+Ennis Blank <Ennis.Blank@fau.de>, Mauritz Uphoff <Mauritz.Uphoff@hs-osnabrueck.de>
+
+[MIT](LICENSE)

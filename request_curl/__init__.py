@@ -1,5 +1,4 @@
-# GET/OPTIONS/POST/PUT/PATCH/DELETE/HEAD
-from .api import get, options, post, put, patch, delete, head, request
 from .sessions import Session
+from .defaults import CHROME_UA, CHROME_HEADERS, CHROME_CIPHER_SUITE
 
 version = "0.0.1"

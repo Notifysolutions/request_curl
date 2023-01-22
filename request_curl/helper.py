@@ -3,16 +3,12 @@ from typing import Tuple, List, Union, Dict
 from http.cookies import SimpleCookie
 
 
-def to_cookiejar(
-        cookies: Union[str, CookieJar],
-        headers: List[Dict[str, str]]
-) -> CookieJar:
+def to_cookiejar(cookies: Union[str, CookieJar], headers: Dict[str, str]) -> CookieJar:
     if isinstance(cookies, CookieJar):
         return cookies
 
     _cookies: List[Tuple[str, str, str]] = [
-        (get_cookie_name(cookie), get_cookie_value(cookie), "")
-        for cookie in cookies
+        (get_cookie_name(cookie), get_cookie_value(cookie), "") for cookie in cookies
     ]
 
     cookie_jar: CookieJar = CookieJar()
@@ -20,16 +16,15 @@ def to_cookiejar(
     for name, value, domain in _cookies:
         cookie_jar.set_cookie(get_cookie(name, value, domain))
 
-    for header in headers:
-        for key, value in header.items():
-            if key.lower() != "set-cookie":
-                continue
+    for key, value in headers.items():
+        if key.lower() != "set-cookie":
+            continue
 
-            header_set_cookie = SimpleCookie()
-            header_set_cookie.load(value)
+        header_set_cookie = SimpleCookie()
+        header_set_cookie.load(value)
 
-            for n, v in header_set_cookie.items():
-                cookie_jar.set_cookie(get_cookie(n, v.value, ""))
+        for n, v in header_set_cookie.items():
+            cookie_jar.set_cookie(get_cookie(n, v.value, ""))
 
     return cookie_jar
 
@@ -44,15 +39,15 @@ def get_cookie(name: str, value: str, domain: str):
         domain=domain,
         domain_specified=False,
         domain_initial_dot=False,
-        path='/',
+        path="/",
         path_specified=True,
         secure=False,
         expires=None,
         discard=True,
         comment=None,
         comment_url=None,
-        rest={'HttpOnly': ""},
-        rfc2109=False
+        rest={"HttpOnly": ""},
+        rfc2109=False,
     )
 
 
