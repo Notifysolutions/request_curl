@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "request_curl"
+version = "0.0.1"
+description = ""
+authors = ["Notifysolutions <Ennis Blank, Mauritz Uphoff>"]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+requests = "^2.28.1"
+Brotli = "^1.0.9"
+pycurl = "^7.45.2"
+
+[tool.poetry.dev-dependencies]
+pytest = "^7.1.3"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
