@@ -24,7 +24,7 @@ class Session:
 
     Or as a context manager::
 
-      >>> with request_curl.Session() as session:
+      >>> with request_curl.Session() as s:
       ...     s.get('https://httpbin.org/get')
       <Response [200]>
     """

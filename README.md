@@ -11,6 +11,25 @@ to install request_curl.
 pip install request_curl
 ```
 
+# Quickstart
+A request_curl session provides cookie persistence, connection-pooling, and configuration.
+
+Basic Usage:
+```python
+import request_curl
+s = request_curl.Session()
+s.get('https://httpbin.org/get')
+# <Response [200]>
+```
+
+Or as a context manager:
+```python
+import request_curl
+with request_curl.Session() as session:
+    session.get('https://httpbin.org/get')
+# <Response [200]>
+```
+
 ## Response Object
 
 The response object behaves
@@ -19,7 +38,7 @@ similar to the one of the [requests](https://pypi.org/project/requests/)' librar
 ```python
 import request_curl
 s = request_curl.Session()
-r = s.get("https://www.example.com")
+r = s.get("https://httpbin.org/get")
 
 print(r)
 print(r.status_code)
@@ -35,15 +54,15 @@ Proxy has to be formatted as a string.
 ```python
 import request_curl
 s = request_curl.Session()
-r = s.get("https://www.example.com", proxies="ip:port:user:password")
-# r = s.get("https://www.example.com", proxies="ip:port")
+r = s.get("https://httpbin.org/get", proxies="ip:port:user:password")
+# r = s.get("https://httpbin.org/get", proxies="ip:port")
 ```
 
 ## Content Decoding
 ```python
 import request_curl
 s = request_curl.Session(accept_encoding="br, gzip, deflate")
-r = s.get("https://www.example.com", debug=True)
+r = s.get("https://httpbin.org/get", debug=True)
 ```
 
 ## HTTP2
@@ -52,7 +71,7 @@ HTTP2 is disabled by default.
 ```python
 import request_curl
 s = request_curl.Session(http2=True)
-r = s.get("https://www.example.com")
+r = s.get("https://httpbin.org/get")
 ```
 
 ## Cipher Suites
@@ -68,7 +87,7 @@ cipher_suite = [
     "AES256-GCM-SHA384"
 ]
 s = request_curl.Session(cipher_suite=cipher_suite)
-r = s.get("https://www.example.com")
+r = s.get("https://httpbin.org/get")
 ```
 
 ## Debug Request
@@ -78,7 +97,7 @@ and output headers will bre printed out.
 ```python
 import request_curl
 s = request_curl.Session()
-r = s.get("https://www.example.com", debug=True)
+r = s.get("https://httpbin.org/get", debug=True)
 ```
 
 ## Custom Headers
@@ -91,35 +110,10 @@ s = request_curl.Session()
 headers = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.163 Safari/537.36"
 }
-r = s.get("https://www.example.com", headers=headers)
-```
-
-## Install with Curl-Impersonate
-How to wrap curl-impersonate and request_curl to imitate browser fingerprints
-
-```bash
-# Tested for Ubuntu
-# Follow https://github.com/lwthiker/curl-impersonate/blob/main/INSTALL.md instructions
-sudo apt install -y libbrotli-dev golang build-essential libnghttp2-dev cmake libunwind-dev libssl-dev git python3-dev
-git clone https://github.com/pycurl/pycurl.git
-sudo python3 setup.py install --curl-config=/usr/local/bin/curl-impersonate-chrome-config
-pip install request_curl
-```
-
-```python
-import request_curl
-from request_curl import CHROME_CIPHER_SUITE, CHROME_HEADER
-
-# match chrome fingerprint
-s = request_curl.Session(
-    http2=True, 
-    accept_encoding="br, gzip, deflate",
-    cipher_suite=CHROME_CIPHER_SUITE,
-    headers=CHROME_HEADER
-)
-r = s.get("https://example.com")
+r = s.get("https://httpbin.org/get", headers=headers)
 ```
 
 ## License
-Ennis Blank <Ennis.Blank@hotmail.com>, Mauritz Uphoff <Mauritz.Uphoff@me.com> \
+Ennis Blank <Ennis.Blank@hotmail.com>, Mauritz Uphoff <Mauritz.Uphoff@me.com>
+
 [MIT](LICENSE)

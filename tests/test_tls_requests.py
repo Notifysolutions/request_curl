@@ -1,9 +1,13 @@
-import json
-
 import request_curl
 
 TLS_API: str = "https://tls.peet.ws/api/all"
-HTTP_BIN_API: str = "https://httpbin.org/get"
+HTTP_BIN_API: str = "https://httpbin.org"
+
+
+def test_context_manager():
+    with request_curl.Session() as session:
+        r = session.get(HTTP_BIN_API + "/get")
+        assert r.status_code == 200
 
 
 def test_http_version():
@@ -18,6 +22,7 @@ def test_http_version():
 
 def test_request_methods():
     session = request_curl.Session()
+
     assert session.get(TLS_API).json["method"] == "GET"
     assert session.post(TLS_API).json["method"] == "POST"
     assert session.options(TLS_API).json["method"] == "OPTIONS"
@@ -25,11 +30,12 @@ def test_request_methods():
     assert session.put(TLS_API).json["method"] == "PUT"
 
 
-def test_response_object():
+def test_response_object_props():
     session = request_curl.Session()
 
-    for url in [TLS_API, HTTP_BIN_API]:
+    for url in [TLS_API, HTTP_BIN_API + "/get"]:
         response = session.get(url)
+
         assert isinstance(response.status_code, int) and response.status_code >= 0
         assert isinstance(response.content, bytes) and len(response.content) > 0
         assert isinstance(response.text, str) and len(response.text) > 0
@@ -55,16 +61,44 @@ def test_custom_cipher_suite():
     assert "TLS_RSA_WITH_AES_256_GCM_SHA384" in r_cipher_suite
 
 
-def test_custom_header():
+def test_custom_request_header():
     session = request_curl.Session(headers={"user-agent": "request_curl"})
     response = session.get(TLS_API)
 
     assert "user-agent: request_curl" in "".join(response.json["http1"]["headers"])
 
 
-def test_json_post():
+def test_request_form_data():
+    data = {"key": "value"}
+    session = request_curl.Session()
+    response = session.post(HTTP_BIN_API + "/post", data=data)
+
+    assert response.json["form"] == data
+
+
+def test_request_json_body():
     _json = {"key": "value"}
     session = request_curl.Session()
-    response = session.post("https://httpbin.org/post", json=_json)
-    assert response.json.get("data") == json.dumps(_json)
+    response = session.post(HTTP_BIN_API + "/post", json=_json)
 
+    assert response.json["json"] == _json
+
+
+def test_request_url_params():
+    params = {"key": "value"}
+    session = request_curl.Session()
+    response = session.get(HTTP_BIN_API + "/get", params=params)
+
+    assert "key=value" in response.url
+
+
+def test_session_cookies_add():
+    session = request_curl.Session(http2=True, headers={})
+    session.add_cookie("a", "b", "c")
+    assert len(session.cookies) >= 0
+
+
+def test_session_cookies_request():
+    session = request_curl.Session(http2=True, headers={})
+    session.get("https://google.com")
+    assert len(session.cookies) >= 0

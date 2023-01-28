@@ -5,7 +5,7 @@ description = ""
 authors = ["Notifysolutions <Ennis Blank, Mauritz Uphoff>"]
 
 [tool.poetry.dependencies]
-python = "^3.10"
+python = "^3.7"
 requests = "^2.28.1"
 Brotli = "^1.0.9"
 pycurl = "^7.45.2"
