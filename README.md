@@ -1,6 +1,6 @@
 # Request Curl
 
-User-friendly wrapper for pycurl
+A user-friendly wrapper for pycurl that simplifies HTTP requests.
 
 ## Installation
 Use the package manager 
@@ -12,50 +12,50 @@ pip install request_curl
 ```
 
 # Quickstart
-A request_curl session provides cookie persistence, connection-pooling, and configuration.
+A request_curl session manages cookies, connection pooling, and configurations.
 
 Basic Usage:
 ```python
 import request_curl
 s = request_curl.Session()
-s.get('https://httpbin.org/get')
-# <Response [200]>
+s.get('https://httpbin.org/get') # returns <Response [200]>
+s.request('GET', 'https://httpbin.org/get') # returns <Response [200]>
 ```
 
-Or as a context manager:
+Using a Context Manager
 ```python
 import request_curl
 with request_curl.Session() as session:
-    session.get('https://httpbin.org/get')
-# <Response [200]>
+    session.get('https://httpbin.org/get') # returns <Response [200]>
 ```
+
+# Features
 
 ## Response Object
 
-The response object behaves
-similar to the one of the [requests](https://pypi.org/project/requests/)' library.
+The response object is similar to that of the [requests](https://pypi.org/project/requests/) library.
 
 ```python
 import request_curl
 s = request_curl.Session()
 r = s.get("https://httpbin.org/get")
 
-print(r)
-print(r.status_code)
-print(r.content)
-print(r.text)
-print(r.json)
-print(r.url)
+print(r) # prints response object
+print(r.status_code) # prints status code
+print(r.content) # prints response content in bytes
+print(r.text) # prints response content as text
+print(r.json) # prints response content as JSON
+print(r.url) # prints response URL
 ```
 
 ## Proxy Support
-Proxy has to be formatted as a string.
+Format the proxy as a string.
 
 ```python
 import request_curl
 s = request_curl.Session()
-r = s.get("https://httpbin.org/get", proxies="ip:port:user:password")
-# r = s.get("https://httpbin.org/get", proxies="ip:port")
+# supports authentication: r = s.get("https://httpbin.org/get", proxies="ip:port:user:password")
+r = s.get("https://httpbin.org/get", proxies="ip:port")
 ```
 
 ## Content Decoding
@@ -91,8 +91,7 @@ r = s.get("https://httpbin.org/get")
 ```
 
 ## Debug Request
-If debug is set to True the raw input 
-and output headers will bre printed out.
+Set debug to True to print raw input and output headers.
 
 ```python
 import request_curl
@@ -101,8 +100,7 @@ r = s.get("https://httpbin.org/get", debug=True)
 ```
 
 ## Custom Headers
-You can specify custom a customer header 
-as a dictionary.
+Specify custom headers as a dictionary.
 
 ```python
 import request_curl
@@ -113,7 +111,17 @@ headers = {
 r = s.get("https://httpbin.org/get", headers=headers)
 ```
 
+## Data
+You can send form data and json data
+
+```python
+import request_curl
+s = request_curl.Session()
+r = s.post("https://httpbin.org/post", data={"key": "value"})
+r = s.post("https://httpbin.org/post", json={"key": "value"})
+```
+
 ## License
-Ennis Blank <Ennis.Blank@hotmail.com>, Mauritz Uphoff <Mauritz.Uphoff@me.com>
+Ennis Blank <Ennis.Blank@hotmail.com>, Mauritz Uphoff <Mauritz.Uphoff@hs-osnabrueck.de>
 
 [MIT](LICENSE)

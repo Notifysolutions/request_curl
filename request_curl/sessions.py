@@ -33,44 +33,52 @@ class Session:
         self,
         headers: Dict[str, str] = None,
         cipher_suite: List[str] = None,
-        proxies: str = "",
         http2: bool = False,
+        proxies: str = "",
         accept_encoding: str = "",
     ):
-        self._curl = pycurl.Curl()
-        self.header = headers if headers else []
+        self.curl = pycurl.Curl()
+        self.headers = headers if headers else {}
+        self.cipher_suite = cipher_suite if cipher_suite else []
+        self.http2 = http2
+        self.proxies = proxies
+        self.accept_encoding = accept_encoding
 
-        if accept_encoding:
-            self._curl.setopt(pycurl.ACCEPT_ENCODING, accept_encoding)
-
-        if http2:
-            self._curl.setopt(pycurl.HTTP_VERSION, pycurl.CURL_HTTP_VERSION_2_0)
-        else:
-            self._curl.setopt(pycurl.HTTP_VERSION, pycurl.CURL_HTTP_VERSION_1_1)
-
-        if proxies:
-            self.__set_proxies(proxies)
-        else:
-            self._curl.setopt(pycurl.PROXY, "")
-            self._curl.setopt(pycurl.PROXYUSERPWD, "")
-
-        if cipher_suite:
-            self._curl.setopt(pycurl.SSL_CIPHER_LIST, ",".join(cipher_suite))
-
-        self.cookies: CookieJar = cookiejar_from_dict({})
+        self.__debug_entries = []
+        self.cookies = cookiejar_from_dict({})
 
     def __enter__(self):
         return self
 
     def __exit__(self, *args):
-        self._curl.close()
+        self.curl.close()
 
-    def __set_proxies(self, proxies: str) -> None:
-        proxy_split: List[str] = proxies.split(":")
-        self._curl.setopt(pycurl.PROXYTYPE, pycurl.PROXYTYPE_HTTP)
-        self._curl.setopt(pycurl.PROXY, f"{proxy_split[0]}:{proxy_split[1]}")
+    def __set_settings(self):
+        if self.accept_encoding:
+            self.curl.setopt(pycurl.ACCEPT_ENCODING, self.accept_encoding)
+
+        if self.headers:
+            self.curl.setopt(
+                pycurl.HTTPHEADER, [f"{k}: {v}" for k, v in self.headers.items()]
+            )
+
+        if self.http2:
+            self.curl.setopt(pycurl.HTTP_VERSION, pycurl.CURL_HTTP_VERSION_2_0)
+        else:
+            self.curl.setopt(pycurl.HTTP_VERSION, pycurl.CURL_HTTP_VERSION_1_1)
+
+        if len(self.proxies) > 0:
+            self.__set_proxies()
+
+        if len(self.cipher_suite) > 0:
+            self.curl.setopt(pycurl.SSL_CIPHER_LIST, ",".join(self.cipher_suite))
+
+    def __set_proxies(self) -> None:
+        proxy_split: List[str] = self.proxies.split(":")
+        self.curl.setopt(pycurl.PROXYTYPE, pycurl.PROXYTYPE_HTTP)
+        self.curl.setopt(pycurl.PROXY, f"{proxy_split[0]}:{proxy_split[1]}")
         if len(proxy_split) > 3:
-            self._curl.setopt(pycurl.PROXYUSERPWD, f"{proxy_split[2]}:{proxy_split[3]}")
+            self.curl.setopt(pycurl.PROXYUSERPWD, f"{proxy_split[2]}:{proxy_split[3]}")
 
     def __add_cookies_to_session(self, cookies: CookieJar) -> None:
         self.cookies = merge_cookies(self.cookies, cookies)
@@ -85,14 +93,16 @@ class Session:
         self,
         method: str,
         url: str,
+        headers: Optional[Dict[str, str]] = None,
         params: Optional[Dict[str, str]] = None,
         data: Optional[Dict[str, Any]] = None,
         json: Optional[Dict[str, Any]] = None,
         proxies: Optional[str] = None,
         timeout: Union[float, int] = 60,
         allow_redirects: bool = True,
-        http2: bool = True,
+        http2: bool = False,
         verify: bool = True,
+        debug: bool = False,
     ):
         """Constructs a :class:`Request <Request>`, prepares it and sends it.
         Returns :class:`Response <Response>` object.
@@ -112,7 +122,7 @@ class Session:
         :param timeout: (optional) How long to wait for the server to send
             data before giving up, as a float, or a :ref:`(connect timeout,
             read timeout) <timeouts>` tuple.
-        :type timeout: float or tuple
+        :type timeout: float
         :param allow_redirects: (optional) Set to True by default.
         :type allow_redirects: bool
         :param http2: (optional) Set http2 to True by default.
@@ -125,58 +135,62 @@ class Session:
             certificates, which will make your application vulnerable to
             man-in-the-middle (MitM) attacks. Setting verify to ``False``
             may be useful during local development or testing.
+        :param debug: (optional) Set debug mode.
+        :type debug: bool
         :rtype: Response
         """
+        self.curl.reset()
+        self.__set_settings()
 
         if method.upper() == "POST":
-            self._curl.setopt(pycurl.POST, 1)
+            self.curl.setopt(pycurl.POST, 1)
         elif method.upper() == "GET":
-            self._curl.setopt(pycurl.HTTPGET, 1)
+            self.curl.setopt(pycurl.HTTPGET, 1)
         elif method.upper() == "HEAD":
-            self._curl.setopt(pycurl.NOBODY, 1)
+            self.curl.setopt(pycurl.NOBODY, 1)
         else:
-            self._curl.setopt(pycurl.CUSTOMREQUEST, method.upper())
+            self.curl.setopt(pycurl.CUSTOMREQUEST, method.upper())
 
         if params:
             url = url + "?" + "&".join([f"{k}={v};" for k, v in params.items()])
 
-        self._curl.setopt(pycurl.URL, url)
+        self.curl.setopt(pycurl.URL, url)
+        self.curl.setopt(pycurl.FOLLOWLOCATION, allow_redirects)
+        self.curl.setopt(pycurl.TIMEOUT, timeout)
 
         if not verify:
-            self._curl.setopt(pycurl.SSL_VERIFYPEER, 0)
-            self._curl.setopt(pycurl.SSL_VERIFYHOST, 0)
+            self.curl.setopt(pycurl.SSL_VERIFYPEER, 0)
+            self.curl.setopt(pycurl.SSL_VERIFYHOST, 0)
 
         if proxies:
-            self.__set_proxies(proxies)
+            self.proxies = proxies
+            self.__set_proxies()
 
-        if not http2:
-            self._curl.setopt(pycurl.HTTP_VERSION, pycurl.CURL_HTTP_VERSION_1_1)
+        if http2:
+            self.curl.setopt(pycurl.HTTP_VERSION, pycurl.CURL_HTTP_VERSION_2_0)
 
-        self._curl.setopt(pycurl.FOLLOWLOCATION, allow_redirects)
-        self._curl.setopt(pycurl.TIMEOUT, timeout)
+        if headers:
+            self.curl.setopt(
+                pycurl.HTTPHEADER, [f"{k}: {v}" for k, v in headers.items()]
+            )
 
         if data:
             form: List[str] = [f"{k}={v}" for k, v in data.items()]
-            self._curl.setopt(pycurl.POSTFIELDS, "&".join(form).encode("utf-8"))
+            self.curl.setopt(pycurl.POSTFIELDS, "&".join(form).encode("utf-8"))
 
         if json:
-            headers = dict()
+            headers = headers.copy() if headers else self.headers.copy()
             headers["Accept"] = "application/json"
             headers["Content-Type"] = "application/json"
             headers["charset"] = "utf-8"
 
-            self._curl.setopt(
+            self.curl.setopt(
                 pycurl.HTTPHEADER, [f"{k}: {v}" for k, v in headers.items()]
             )
 
             if isinstance(json, dict):
                 json_data = _json.dumps(json)
-                self._curl.setopt(pycurl.POSTFIELDS, json_data)
-
-        elif len(self.header) > 0:
-            self._curl.setopt(
-                pycurl.HTTPHEADER, [f"{k}: {v}" for k, v in self.header.items()]
-            )
+                self.curl.setopt(pycurl.POSTFIELDS, json_data)
 
         if self.cookies:
             chunks = []
@@ -184,25 +198,30 @@ class Session:
                 name, value = quote_plus(cookie.name), quote_plus(cookie.value)
                 chunks.append(f"{name}={value};")
             if chunks:
-                self._curl.setopt(pycurl.COOKIE, "".join(chunks))
-        else:
-            self._curl.setopt(pycurl.COOKIELIST, "")
+                self.curl.setopt(pycurl.COOKIE, "".join(chunks))
+
+        if debug:
+            self.__debug_entries = []
+            self.curl.setopt(pycurl.VERBOSE, 1)
 
         body_output: BytesIO = BytesIO()
         headers_output: BytesIO = BytesIO()
-        self._curl.setopt(pycurl.HEADERFUNCTION, headers_output.write)
-        self._curl.setopt(pycurl.WRITEFUNCTION, body_output.write)
+        self.curl.setopt(pycurl.HEADERFUNCTION, headers_output.write)
+        self.curl.setopt(pycurl.WRITEFUNCTION, body_output.write)
 
-        self._curl.perform()
+        self.curl.perform()
 
-        response = Response(self._curl, body_output, headers_output)
+        if debug:
+            print("\n".join(self.__debug_entries))
+
+        response = Response(self.curl, body_output, headers_output)
         self.__add_cookies_to_session(response.cookies)
 
         return response
 
     def debug_function(self, t, b):
         if t in [1, 2, 5, 6]:
-            self.debug_entries.append(b.decode("utf-8"))
+            self.__debug_entries.append(b.decode("utf-8"))
 
     def get(self, url, **kwargs):
         r"""Sends a GET request. Returns :class:`Response` object."""

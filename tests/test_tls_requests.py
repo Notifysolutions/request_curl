@@ -96,9 +96,40 @@ def test_session_cookies_add():
     session = request_curl.Session(http2=True, headers={})
     session.add_cookie("a", "b", "c")
     assert len(session.cookies) >= 0
+    assert session.cookies["a"] == "b"
 
 
 def test_session_cookies_request():
     session = request_curl.Session(http2=True, headers={})
     session.get("https://google.com")
     assert len(session.cookies) >= 0
+    session.get(HTTP_BIN_API)
+    assert len(session.cookies) >= 0
+    session.get(TLS_API)
+    assert len(session.cookies) >= 0
+
+
+def test_curl_reset():
+    session = request_curl.Session(http2=False, headers={"user-agent": "test_1"})
+    response = session.get(TLS_API)
+    assert "user-agent: test_1" in "".join(response.json["http1"]["headers"])
+
+    response = session.get(TLS_API, headers={"user-agent": "test_2"})
+    assert "user-agent: test_1" not in "".join(response.json["http1"]["headers"])
+    assert "user-agent: test_2" in "".join(response.json["http1"]["headers"])
+
+    response = session.post(TLS_API, json={"key": "value"})
+    assert "application/json" in "".join(response.json["http1"]["headers"])
+
+    response = session.post(TLS_API, data={"key": "value"})
+    assert "application/json" not in "".join(response.json["http1"]["headers"])
+
+    response = session.post(TLS_API, data={"key": "value"}, http2=True)
+    assert response.json.get("http_version") == "h2"
+
+
+def test_debug():
+    session = request_curl.Session(http2=True, headers={"user-agent": "test_1"})
+    response = session.get(TLS_API, debug=True)
+
+    assert response.status_code == 200
