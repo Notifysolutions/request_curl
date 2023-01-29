@@ -7,7 +7,7 @@ CHROME_UA: str = "".join(
     ]
 )
 
-CHROME_HEADER: Dict[str, str] = {
+CHROME_HEADERS: Dict[str, str] = {
     "sec-ch-ua": ' Not A;Brand";v="99", "Chromium";v="98", "Google Chrome";v="98',
     "sec-ch-ua-mobile": "?0",
     "sec-ch-ua-platform": '"Windows"',

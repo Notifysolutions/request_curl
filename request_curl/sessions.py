@@ -35,14 +35,12 @@ class Session:
         cipher_suite: List[str] = None,
         http2: bool = False,
         proxies: str = "",
-        accept_encoding: str = "",
     ):
         self.curl = pycurl.Curl()
         self.headers = headers if headers else {}
         self.cipher_suite = cipher_suite if cipher_suite else []
         self.http2 = http2
         self.proxies = proxies
-        self.accept_encoding = accept_encoding
 
         self.__debug_entries = []
         self.cookies = cookiejar_from_dict({})
@@ -54,9 +52,6 @@ class Session:
         self.curl.close()
 
     def __set_settings(self):
-        if self.accept_encoding:
-            self.curl.setopt(pycurl.ACCEPT_ENCODING, self.accept_encoding)
-
         if self.headers:
             self.curl.setopt(
                 pycurl.HTTPHEADER, [f"{k}: {v}" for k, v in self.headers.items()]

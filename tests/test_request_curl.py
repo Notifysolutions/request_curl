@@ -1,4 +1,6 @@
 import request_curl
+from request_curl import CHROME_CIPHER_SUITE, CHROME_HEADERS, CHROME_UA
+from request_curl.dict import CaseInsensitiveDict
 
 TLS_API: str = "https://tls.peet.ws/api/all"
 HTTP_BIN_API: str = "https://httpbin.org"
@@ -133,3 +135,28 @@ def test_debug():
     response = session.get(TLS_API, debug=True)
 
     assert response.status_code == 200
+
+
+def test_response_header():
+    session = request_curl.Session(http2=True, headers={"user-agent": "test_1"})
+    response = session.get(HTTP_BIN_API)
+
+    assert isinstance(response.headers, CaseInsensitiveDict)
+    assert isinstance(response.headers["content-type"], str)
+
+
+def test_with_chrome_fp():
+    session = request_curl.Session(
+        http2=True, cipher_suite=CHROME_CIPHER_SUITE, headers=CHROME_HEADERS
+    )
+
+    response = session.get(TLS_API)
+
+    assert response.json["user_agent"] == CHROME_UA
+
+
+def test_response_cookies():
+    session = request_curl.Session()
+    response = session.get("https://google.com")
+
+    assert len(response.cookies) > 0

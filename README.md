@@ -46,6 +46,7 @@ print(r.content) # prints response content in bytes
 print(r.text) # prints response content as text
 print(r.json) # prints response content as JSON
 print(r.url) # prints response URL
+print(r.headers) # prints response URL
 ```
 
 ## Proxy Support
@@ -56,13 +57,6 @@ import request_curl
 s = request_curl.Session()
 # supports authentication: r = s.get("https://httpbin.org/get", proxies="ip:port:user:password")
 r = s.get("https://httpbin.org/get", proxies="ip:port")
-```
-
-## Content Decoding
-```python
-import request_curl
-s = request_curl.Session(accept_encoding="br, gzip, deflate")
-r = s.get("https://httpbin.org/get", debug=True)
 ```
 
 ## HTTP2
@@ -126,7 +120,13 @@ json_data = {"key": "value"}
 response = s.post("https://httpbin.org/post", json=json_data)
 ```
 
-## License
+# Contributing
+
+We welcome contributions through pull requests. 
+Before making major changes, please open an issue to discuss your intended changes.
+Also, ensure to update relevant tests.
+
+# License
 Ennis Blank <Ennis.Blank@fau.de>, Mauritz Uphoff <Mauritz.Uphoff@hs-osnabrueck.de>
 
 [MIT](LICENSE)

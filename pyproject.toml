@@ -1,8 +1,14 @@
 [tool.poetry]
 name = "request_curl"
 version = "0.0.1"
-description = ""
-authors = ["Notifysolutions <Ennis Blank, Mauritz Uphoff>"]
+description = "A user-friendly wrapper for pycurl that simplifies HTTP requests"
+authors = ["Mauritz Uphoff <mauritz.uphoff@hs-osnabrueck.de>", "Ennis Blank <Ennis.Blank@fau.de>"]
+readme = "README.md"
+license = "MIT"
+maintainers = ["Mauritz Uphoff", "Ennis Blank"]
+homepage = "https://github.com/Notifysolutions/request_curl"
+repository = "https://github.com/Notifysolutions/request_curl"
+documentation = "https://github.com/Notifysolutions/request_curl/blob/main/README.md"
 
 [tool.poetry.dependencies]
 python = "^3.7"
