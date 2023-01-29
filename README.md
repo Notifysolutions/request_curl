@@ -46,7 +46,7 @@ print(r.content) # prints response content in bytes
 print(r.text) # prints response content as text
 print(r.json) # prints response content as JSON
 print(r.url) # prints response URL
-print(r.headers) # prints response URL
+print(r.headers) # prints response headers
 ```
 
 ## Proxy Support
