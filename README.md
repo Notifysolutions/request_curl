@@ -112,16 +112,20 @@ r = s.get("https://httpbin.org/get", headers=headers)
 ```
 
 ## Data
-You can send form data and json data
 
 ```python
 import request_curl
 s = request_curl.Session()
-r = s.post("https://httpbin.org/post", data={"key": "value"})
-r = s.post("https://httpbin.org/post", json={"key": "value"})
+# sending form data
+form_data = {"key": "value"}
+response = s.post("https://httpbin.org/post", data=form_data)
+
+# sending json data
+json_data = {"key": "value"}
+response = s.post("https://httpbin.org/post", json=json_data)
 ```
 
 ## License
-Ennis Blank <Ennis.Blank@hotmail.com>, Mauritz Uphoff <Mauritz.Uphoff@hs-osnabrueck.de>
+Ennis Blank <Ennis.Blank@fau.de>, Mauritz Uphoff <Mauritz.Uphoff@hs-osnabrueck.de>
 
 [MIT](LICENSE)
