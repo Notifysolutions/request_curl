@@ -5,7 +5,7 @@ A user-friendly wrapper for pycurl that simplifies HTTP requests.
 ## Installation
 Use the package manager 
 [pip](https://pip.pypa.io/en/stable/) 
-to install request_curl.
+to install [request_curl](https://pypi.org/project/request-curl/).
 
 ```
 pip install request_curl
