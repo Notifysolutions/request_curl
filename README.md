@@ -116,6 +116,7 @@ r = s.get("https://httpbin.org/get", headers=headers)
 ```python
 import request_curl
 s = request_curl.Session()
+
 # sending form data
 form_data = {"key": "value"}
 response = s.post("https://httpbin.org/post", data=form_data)
