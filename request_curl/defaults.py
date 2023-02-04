@@ -2,13 +2,13 @@ from typing import Dict, List
 
 CHROME_UA: str = "".join(
     [
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 13_1)",
-        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) ",
+        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.67 Safari/537.36",
     ]
 )
 
 CHROME_HEADERS: Dict[str, str] = {
-    "sec-ch-ua": ' Not A;Brand";v="99", "Chromium";v="98", "Google Chrome";v="98',
+    "sec-ch-ua": ' Not A;Brand";v="99", "Chromium";v="101", "Google Chrome";v="101"',
     "sec-ch-ua-mobile": "?0",
     "sec-ch-ua-platform": '"Windows"',
     "Upgrade-Insecure-Requests": "1",

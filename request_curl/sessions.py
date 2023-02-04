@@ -35,12 +35,14 @@ class Session:
         cipher_suite: List[str] = None,
         http2: bool = False,
         proxies: str = "",
+        verify: bool = True,
     ):
         self.curl = pycurl.Curl()
         self.headers = headers if headers else {}
         self.cipher_suite = cipher_suite if cipher_suite else []
         self.http2 = http2
         self.proxies = proxies
+        self.verify = verify
 
         self.__debug_entries = []
         self.cookies = cookiejar_from_dict({})
@@ -62,11 +64,15 @@ class Session:
         else:
             self.curl.setopt(pycurl.HTTP_VERSION, pycurl.CURL_HTTP_VERSION_1_1)
 
+        if not self.verify:
+            self.curl.setopt(pycurl.SSL_VERIFYPEER, 0)
+            self.curl.setopt(pycurl.SSL_VERIFYHOST, 0)
+
         if len(self.proxies) > 0:
             self.__set_proxies()
 
         if len(self.cipher_suite) > 0:
-            self.curl.setopt(pycurl.SSL_CIPHER_LIST, ",".join(self.cipher_suite))
+            self.curl.setopt(pycurl.SSL_CIPHER_LIST, ":".join(self.cipher_suite))
 
     def __set_proxies(self) -> None:
         proxy_split: List[str] = self.proxies.split(":")
