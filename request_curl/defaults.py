@@ -45,3 +45,46 @@ CHROME_CIPHER_SUITE: List[str] = [
     "AES128-SHA",
     "AES256-SHA",
 ]
+
+FIREFOX98_CIPHER_SUITE: List[str] = [
+    "aes_128_gcm_sha_256",
+    "chacha20_poly1305_sha_256",
+    "aes_256_gcm_sha_384",
+    "ecdhe_ecdsa_aes_128_gcm_sha_256",
+    "ecdhe_rsa_aes_128_gcm_sha_256",
+    "ecdhe_ecdsa_chacha20_poly1305_sha_256",
+    "ecdhe_rsa_chacha20_poly1305_sha_256",
+    "ecdhe_ecdsa_aes_256_gcm_sha_384",
+    "ecdhe_rsa_aes_256_gcm_sha_384",
+    "ecdhe_ecdsa_aes_256_sha",
+    "ecdhe_ecdsa_aes_128_sha",
+    "ecdhe_rsa_aes_128_sha",
+    "ecdhe_rsa_aes_256_sha",
+    "rsa_aes_128_gcm_sha_256",
+    "rsa_aes_256_gcm_sha_384",
+    "rsa_aes_128_sha",
+    "rsa_aes_256_sha",
+]
+
+FIREFOX98_UA: str = "".join(
+    ["Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:98.0) Gecko/20100101 Firefox/98.0"]
+)
+
+
+FIREFOX98_HEADERS: Dict[str, str] = {
+    "User-Agent": FIREFOX98_UA,
+    "Accept": "".join(
+        [
+            "text/html,application/xhtml+xml,",
+            "application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        ]
+    ),
+    "Accept-Language": "en-US,en;q=0.5",
+    "Accept-Encoding": "gzip, deflate, br",
+    "Upgrade-Insecure-Requests": "1",
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "none",
+    "Sec-Fetch-User": "?1",
+    "TE": "Trailers",
+}

@@ -127,14 +127,14 @@ response = s.post("https://httpbin.org/post", json=json_data)
 To use request_curl with [curl-impersonate](https://github.com/lwthiker/curl-impersonate), 
 opt for our [custom Docker image](https://hub.docker.com/r/h3adex/request-curl-impersonate) by either pulling or building it. 
 The image comes with request_curl and curl-impersonate pre-installed. 
-Check below for a demonstration on impersonating chrome101 tls-fingerprint and request_curl with our custom Docker Image.
+Check below for a demonstration on impersonating firefox98 tls-fingerprint and request_curl with our custom Docker Image.
 
-**Note**: This feature is still considered experimental.
+**Note**: This feature is still considered experimental. Only tested with firefox fingerprint
 
 To pull the Docker image:
 
 ```bash
-docker pull h3adex/request-curl-impersonate:0.0.2
+docker pull h3adex/request-curl-impersonate:latest
 docker run --rm -it h3adex/request-curl-impersonate
 ```
 
@@ -142,12 +142,19 @@ Example Python code for a target website:
 
 ```python
 import request_curl
-from request_curl import CHROME_CIPHER_SUITE, CHROME_HEADERS
+from request_curl import FIREFOX98_CIPHER_SUITE, FIREFOX98_HEADERS
 
-# impersonates chrome101
-session = request_curl.Session(http2=True, cipher_suite=CHROME_CIPHER_SUITE, headers=CHROME_HEADERS)
-response = session.get("https://google.com")
+# impersonates ff98
+session = request_curl.Session(
+    http2=True, 
+    cipher_suite=FIREFOX98_CIPHER_SUITE, 
+    headers=FIREFOX98_HEADERS
+)
+response = session.get("https://tls.browserleaks.com/json")
 # <Response [200]>
+# "ja3_hash":"25e9b0dd5b8e9330b206eae87e885e19"
+# same result as: 
+# docker run --rm lwthiker/curl-impersonate:0.5-ff curl_ff98 https://tls.browserleaks.com/json
 ```
 
 # Contributing

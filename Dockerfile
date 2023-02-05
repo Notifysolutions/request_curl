@@ -7,7 +7,7 @@
 
 # Python is needed for building libnss.
 # Use it as a common base.
-FROM python:3.10.1-slim-buster as builder
+FROM python:3.10.1-slim-bullseye as builder
 
 WORKDIR /build
 
@@ -19,8 +19,14 @@ RUN apt-get update && \
 # both for libnghttp2 and curl.
 RUN apt-get install -y autoconf automake autotools-dev pkg-config libtool
 
-# Dependencies for downloading and building BoringSSL
-RUN apt-get install -y g++ golang-go unzip
+# Dependencies for building libnss
+# See https://firefox-source-docs.mozilla.org/security/nss/build.html#mozilla-projects-nss-building
+RUN apt-get install -y mercurial python3-pip
+
+# curl tries to load the CA certificates for libnss.
+# It loads them from /usr/lib/x86_64-linux-gnu/nss/libnssckbi.so,
+# which is supplied by libnss3 on Debian/Ubuntu
+RUN apt-get install -y libnss3
 
 # Download and compile libbrotli
 ARG BROTLI_VERSION=1.0.9
@@ -31,28 +37,18 @@ RUN cd brotli-${BROTLI_VERSION} && \
     cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=./installed .. && \
     cmake --build . --config Release --target install
 
-# BoringSSL doesn't have versions. Choose a commit that is used in a stable
-# Chromium version.
-ARG BORING_SSL_COMMIT=3a667d10e94186fd503966f5638e134fe9fb4080
-RUN curl -L https://github.com/google/boringssl/archive/${BORING_SSL_COMMIT}.zip -o boringssl.zip && \
-    unzip boringssl && \
-    mv boringssl-${BORING_SSL_COMMIT} boringssl
+# Needed for building libnss
+RUN pip install gyp-next
 
-# Compile BoringSSL.
-# See https://boringssl.googlesource.com/boringssl/+/HEAD/BUILDING.md
-COPY patches/boringssl-*.patch boringssl/
-RUN cd boringssl && \
-    for p in $(ls boringssl-*.patch); do patch -p1 < $p; done && \
-    mkdir build && cd build && \
-    cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=on -GNinja .. && \
-    ninja
+ARG NSS_VERSION=nss-3.77
+# This tarball is already bundled with nspr, a dependency of libnss.
+ARG NSS_URL=https://ftp.mozilla.org/pub/security/nss/releases/NSS_3_77_RTM/src/nss-3.77-with-nspr-4.32.tar.gz
 
-# Fix the directory structure so that curl can compile against it.
-# See https://everything.curl.dev/source/build/tls/boringssl
-RUN mkdir boringssl/build/lib && \
-    ln -s ../crypto/libcrypto.a boringssl/build/lib/libcrypto.a && \
-    ln -s ../ssl/libssl.a boringssl/build/lib/libssl.a && \
-    cp -R boringssl/include boringssl/build
+# Download and compile nss.
+RUN curl -o ${NSS_VERSION}.tar.gz ${NSS_URL}
+RUN tar xf ${NSS_VERSION}.tar.gz && \
+    cd ${NSS_VERSION}/nss && \
+    ./build.sh -o --disable-tests --static --python=python3
 
 ARG NGHTTP2_VERSION=nghttp2-1.46.0
 ARG NGHTTP2_URL=https://github.com/nghttp2/nghttp2/releases/download/v1.46.0/nghttp2-1.46.0.tar.bz2
@@ -85,15 +81,15 @@ RUN cd ${CURL_VERSION} && \
                 --disable-shared \
                 --with-nghttp2=/build/${NGHTTP2_VERSION}/installed \
                 --with-brotli=/build/brotli-${BROTLI_VERSION}/build/installed \
-                --with-openssl=/build/boringssl/build \
-                LIBS="-pthread" \
-                CFLAGS="-I/build/boringssl/build" \
+                --with-nss=/build/${NSS_VERSION}/dist/Release \
+                --with-nss-deprecated \
+                CFLAGS="-I/build/${NSS_VERSION}/dist/public/nss -I/build/${NSS_VERSION}/dist/Release/include/nspr" \
                 USE_CURL_SSLKEYLOGFILE=true && \
     make && make install
 
 RUN mkdir out && \
-    cp /build/install/bin/curl-impersonate-chrome out/ && \
-    ln -s curl-impersonate-chrome out/curl-impersonate && \
+    cp /build/install/bin/curl-impersonate-ff out/ && \
+    ln -s curl-impersonate-ff out/curl-impersonate && \
     strip out/curl-impersonate
 
 # Verify that the resulting 'curl' has all the necessary features.
@@ -112,18 +108,18 @@ RUN cd ${CURL_VERSION} && \
     ./configure --prefix=/build/install \
                 --with-nghttp2=/build/${NGHTTP2_VERSION}/installed \
                 --with-brotli=/build/brotli-${BROTLI_VERSION}/build/installed \
-                --with-openssl=/build/boringssl/build \
-                LIBS="-pthread" \
-                CFLAGS="-I/build/boringssl/build" \
+                --with-nss=/build/${NSS_VERSION}/dist/Release \
+                --with-nss-deprecated \
+                CFLAGS="-I/build/${NSS_VERSION}/dist/public/nss -I/build/${NSS_VERSION}/dist/Release/include/nspr" \
                 USE_CURL_SSLKEYLOGFILE=true && \
     make clean && make && make install
 
 # Copy libcurl-impersonate and symbolic links
 RUN cp -d /build/install/lib/libcurl-impersonate* /build/out
 
-RUN ver=$(readlink -f ${CURL_VERSION}/lib/.libs/libcurl-impersonate-chrome.so | sed 's/.*so\.//') && \
+RUN ver=$(readlink -f ${CURL_VERSION}/lib/.libs/libcurl-impersonate-ff.so | sed 's/.*so\.//') && \
     major=$(echo -n $ver | cut -d'.' -f1) && \
-    ln -s "libcurl-impersonate-chrome.so.$ver" "out/libcurl-impersonate.so.$ver" && \
+    ln -s "libcurl-impersonate-ff.so.$ver" "out/libcurl-impersonate.so.$ver" && \
     ln -s "libcurl-impersonate.so.$ver" "out/libcurl-impersonate.so" && \
     strip "out/libcurl-impersonate.so.$ver"
 
@@ -132,26 +128,27 @@ RUN ver=$(readlink -f ${CURL_VERSION}/lib/.libs/libcurl-impersonate-chrome.so | 
 RUN ! (ldd ./out/curl-impersonate | grep -q -e nghttp2 -e brotli -e ssl -e crypto)
 
 # Wrapper scripts
-COPY curl_chrome* curl_edge* curl_safari* out/
+COPY curl_ff* out/
+
 
 # Create a final, minimal image with the compiled binaries
 # only.
-FROM python:3.10-buster
+FROM ubuntu:22.10
 
-RUN apt update -y && apt install libbrotli-dev libunwind-dev libssl-dev libnghttp2-dev -y
+RUN apt-get update && apt-get install -y ca-certificates
+RUN apt-get install -y libnss3 nss-plugin-pem wget python3 python3-pip
+
 # Copy curl-impersonate from the builder image
 COPY --from=builder /build/install /usr/local
 RUN ldconfig
-# RUN apk add gcc libc-dev openssl-dev brotli
-
 # Copy to /build/out as well for backward compatibility with previous versions.
 COPY --from=builder /build/out /build/out
 # Wrapper scripts
 COPY --from=builder /build/out/curl_* /usr/local/bin/
 
 RUN wget https://github.com/pycurl/pycurl/archive/refs/tags/REL_7_45_2.tar.gz && tar -xzf REL_7_45_2.tar.gz
-
-RUN cd pycurl-REL_7_45_2 && python3 setup.py install --curl-config=/usr/local/bin/curl-impersonate-chrome-config
-
+RUN cd pycurl-REL_7_45_2 && python3 setup.py install --curl-config=/usr/local/bin/curl-impersonate-ff-config
 RUN pip install request_curl
+
+CMD ["python3"]
 

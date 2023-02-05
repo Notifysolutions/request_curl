@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "request_curl"
-version = "0.0.2"
+version = "0.0.3"
 description = "A user-friendly wrapper for pycurl that simplifies HTTP requests"
 authors = ["Mauritz Uphoff <mauritz.uphoff@hs-osnabrueck.de>", "Ennis Blank <Ennis.Blank@fau.de>"]
 readme = "README.md"
