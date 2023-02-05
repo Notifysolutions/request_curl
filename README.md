@@ -7,6 +7,9 @@ Use the package manager
 [pip](https://pip.pypa.io/en/stable/) 
 to install [request_curl](https://pypi.org/project/request-curl/).
 
+> NOTE: You need Python and libcurl installed on your system to use or build pycurl. Some RPM distributions of curl/libcurl do not include everything necessary to build pycurl, in which case you need to install the developer specific RPM which is usually called curl-dev.
+
+
 ```
 pip install request_curl
 ```
@@ -118,6 +121,33 @@ response = s.post("https://httpbin.org/post", data=form_data)
 # sending json data
 json_data = {"key": "value"}
 response = s.post("https://httpbin.org/post", json=json_data)
+```
+
+# Usage with Curl-Impersonate
+To use request_curl with [curl-impersonate](https://github.com/lwthiker/curl-impersonate), 
+opt for our [custom Docker image](https://hub.docker.com/r/h3adex/request-curl-impersonate) by either pulling or building it. 
+The image comes with request_curl and curl-impersonate pre-installed. 
+Check below for a demonstration on impersonating chrome101 tls-fingerprint and request_curl with our custom Docker Image.
+
+**Note**: This feature is still considered experimental.
+
+To pull the Docker image:
+
+```bash
+docker pull h3adex/request-curl-impersonate:0.0.2
+docker run --rm -it h3adex/request-curl-impersonate
+```
+
+Example Python code for a target website:
+
+```python
+import request_curl
+from request_curl import CHROME_CIPHER_SUITE, CHROME_HEADERS
+
+# impersonates chrome101
+session = request_curl.Session(http2=True, cipher_suite=CHROME_CIPHER_SUITE, headers=CHROME_HEADERS)
+response = session.get("https://google.com")
+# <Response [200]>
 ```
 
 # Contributing

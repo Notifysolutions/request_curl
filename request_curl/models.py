@@ -105,27 +105,32 @@ class Response:
     def __set_text(self):
         try:
             if not self._text:
-                self._text = self._body_output.getvalue().decode("UTF-8")
                 if "gzip" in self.__get_header_value("Content-Encoding"):
                     try:
                         if "ISO-8859-1" in self.__get_header_value("Content-Type"):
-                            self._text = str(
-                                self.__decode_gzip(self._body_output), "ISO-8859-1"
+                            self._text = self.__decode_gzip(self._body_output).decode(
+                                "ISO-8859-1", errors="ignore"
                             )
                         else:
-                            self._text = str(
-                                self.__decode_gzip(self._body_output), "utf-8"
+                            self._text = self.__decode_gzip(self._body_output).decode(
+                                "UTF-8", errors="ignore"
                             )
+
                     except zlib.error:
                         pass
                 elif "br" in self.__get_header_value("Content-Encoding"):
                     try:
-                        self._text = str(self.__decode_br(self._body_output), "utf-8")
+                        self._text = self.__decode_br(self._body_output).decode(
+                            "UTF-8", errors="ignore"
+                        )
                     except Exception as e:
                         pass
-
-        except Exception as e:
-            self._text = ""
+                else:
+                    self._text = self._body_output.getvalue().decode(
+                        "UTF-8", errors="ignore"
+                    )
+        except Exception:
+            self._text = None
 
     @property
     def cookies(self) -> CookieJar:
