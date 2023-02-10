@@ -72,6 +72,9 @@ class Response:
         self.__parse_headers_raw()
         self.__set_text()
 
+    def __repr__(self):
+        return f'<{self.__class__.__name__} [{self.status_code}]>'
+
     @property
     def url(self):
         return self._url
